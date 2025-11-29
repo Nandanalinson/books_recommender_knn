@@ -6,15 +6,19 @@ users = pd.read_csv("data/Users.csv")
 
 book_data = books.dropna(axis=0)
 book_features = ['ISBN','Book-Title','Book-Author']
-b = book_data[book_features]
-print(b)
+book = book_data[book_features]
+book.drop_duplicates(subset="ISBN", inplace=True)
+#book
 
-ratings_data = ratings[ratings['Book-Rating'] > 0]
+#ratings
+ratings = ratings[ratings['Book-Rating'] > 0]
+print(ratings)
 
-print(ratings_data)
+#merge book with ratings
+df = ratings.merge(book, on="ISBN")
+print(df.head())
 
-print(books.shape)
-print(book_data.shape)
+
+print(book.shape)
 print(ratings.shape)
-print(ratings_data.shape)
 print(users.shape)
