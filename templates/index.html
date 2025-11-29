@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Similar Books Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script defer src="{{ url_for('static', filename='js/script.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Find Similar Books</h1>
+        <form id="bookForm">
+            <input type="text" id="favoriteBook" name="favoriteBook" placeholder="Enter book name" required>
+            <button type="submit">Search</button>
+        </form>
+        <div id="results"></div>
+    </div>
+</body>
+</html>
