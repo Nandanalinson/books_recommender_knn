@@ -10,9 +10,6 @@ book_features = ['ISBN','Book-Title','Book-Author','Publisher']
 book = book_data[book_features]
 book.drop_duplicates(subset="ISBN", inplace=True)
 
-book.drop_duplicates(subset="ISBN", inplace=True)
-
-
 #ratings
 #ratings = ratings[ratings['Book-Rating'] > 0]
 #ratings_features = ['ISBN','Book-Rating']
