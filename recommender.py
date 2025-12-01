@@ -20,6 +20,7 @@ def get_similar_books(book_name):
         return []
 
     target = matches.iloc[0]
+    isbn_num = target["ISBN"]
     target_author = target["Book-Author"]
     target_publisher = target["Publisher"]
     target_words = clean_words(target["Book-Title"])
@@ -35,13 +36,13 @@ def get_similar_books(book_name):
 
         if row["Publisher"] == target_publisher:
             score += 1
-            
+
         row_words = clean_words(row["Book-Title"])
 
 
         score += len(target_words.intersection(row_words))
 
-        if score > 0 and row["Book-Title"] != target["Book-Title"]:
+        if score > 0 and row["Book-Title"] != target["Book-Title"] and row["ISBN"] != target["ISBN"]:
             recommendations.append({
                 "title": row["Book-Title"],
                 "author": row["Book-Author"],
