@@ -1,28 +1,26 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, render_template, request, jsonify
+from recommender import get_similar_books
 
 app = Flask(__name__)
 
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-@app.route('/')
-def index():
+@app.route("/get_similar", methods=["POST"])
+def get_similar():
+    data = request.get_json()
 
-    return render_template('index.html')
+    book_name = data.get("book_name")
 
-@app.route('/get_similar', methods=['POST'])
-def get_similar_books():
+    if not book_name:
+        return jsonify({"error": "No book name provided"}), 400
 
-    data = request.get_json(silent=True)
-    favorite_book = data.get("favorite_book", "").strip()
-
-
+    recommendations = get_similar_books(book_name)
     
-    
-    response.raise_for_status()
 
- 
-  
-    return jsonify({"similar_books": similar_books})
+    return jsonify({"recommendations": recommendations})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

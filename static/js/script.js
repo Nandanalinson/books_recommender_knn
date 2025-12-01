@@ -1,31 +1,38 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('bookForm');
-    const resultsDiv = document.getElementById('results');
+function getRecommendations() {
+    const bookName = document.getElementById("userBook").value;
+    const list = document.getElementById("results");
 
-    form.addEventListener('submit', async e => {
-        e.preventDefault(); 
+    // 🔹 Show "Searching..." immediately
+    list.innerHTML = "<li>Searching...</li>";
 
-        const favoriteBook = document.getElementById('favoriteBook').value.trim();
+    fetch("/get_similar", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({book_name: bookName})
+    })
+    .then(res => res.json())
+    .then(data => {
 
-        resultsDiv.textContent = "Searching...";
+        list.innerHTML = "";
 
-        
-        const res = await fetch('/get_similar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ favorite_book: favoriteBook })
-        });
-
-        const data = await res.json();
-        const books = data.similar_books || [];
-
-        if (books.length === 0) {
-            resultsDiv.textContent = "No similar books found.";
+        if (data.error) {
+            list.innerHTML = "<li>No book found.</li>";
             return;
         }
 
-        
-        resultsDiv.innerHTML = `<ul>${books.map(b => `<li>${b.title} by ${b.author}</li>`).join('')}</ul>`;
-        
+        if (data.recommendations.length === 0) {
+            list.innerHTML = "<li>No similar books.</li>";
+            return;
+        }
+
+        data.recommendations.forEach(book => {
+            const item = document.createElement("li");
+            item.textContent = `${book.title} by ${book.author}`;
+            list.appendChild(item);
+        });
+
+    })
+    .catch(err => {
+        list.innerHTML = "<li>Error connecting to server.</li>";
     });
-});
+}
