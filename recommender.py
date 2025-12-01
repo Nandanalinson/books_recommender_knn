@@ -2,7 +2,6 @@ import pandas as pd
 
 books_df = pd.read_pickle("data/books.pkl")
 
-# Common useless words to ignore
 STOPWORDS = {"the", "a", "an", "and", "to", "of", "in", "for", "guide", 
              "world", "companion", "reader", "handbook", "book", "life"}
 
@@ -14,7 +13,7 @@ def clean_words(title):
 def get_similar_books(book_name):
     book_name = book_name.strip().lower()
 
-    # Find best match
+
     matches = books_df[books_df["Book-Title"].str.lower().str.contains(book_name)]
 
     if matches.empty:

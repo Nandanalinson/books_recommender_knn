@@ -2,7 +2,6 @@ function getRecommendations() {
     const bookName = document.getElementById("userBook").value;
     const list = document.getElementById("results");
 
-    // 🔹 Show "Searching..." immediately
     list.innerHTML = "<li>Searching...</li>";
 
     fetch("/get_similar", {
