@@ -16,7 +16,7 @@ def index():
 @app.route("/get_similar", methods=["POST"])
 def get_similar():
     data = request.get_json(silent=True)
-    book_name = data.get("book")
+    book_name = data.get("book_name")  # <-- FIX
 
     recommendations = recommend_knn(
         book_name,
@@ -25,7 +25,7 @@ def get_similar():
         model
     )
 
-    return jsonify(recommendations)
+    return jsonify({"recommendations": recommendations})  # <-- FIX
 
 if __name__ == "__main__":
     app.run(debug=True)
