@@ -35,6 +35,7 @@ def get_similar_books(book_name):
 
         if row["Publisher"] == target_publisher:
             score += 1
+            
         row_words = clean_words(row["Book-Title"])
 
 
