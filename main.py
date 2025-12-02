@@ -11,6 +11,10 @@ pt = model_data["pt"]
 similarity_scores = model_data["similarity_scores"]
 books = model_data["book"]
 
+
+#https://www.kaggle.com/code/swas06/bookrecommendation-colloborativefiltering#Colloborative-Filtering--Based-Recommendation-System
+
+
 @app.route("/")
 def index():
     return render_template('index.html')
