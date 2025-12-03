@@ -5,15 +5,13 @@ import numpy as np
 
 app = Flask(__name__)
 
-# Load model
+
+original_books_df = pd.read_csv("data/Books.csv")
+
+
 model_data = pickle.load(open("data/recommender.pkl", "rb"))
-pt = model_data["pt"]
-similarity_scores = model_data["similarity_scores"]
-books = model_data["book"]
-
-
-#https://www.kaggle.com/code/swas06/bookrecommendation-colloborativefiltering#Colloborative-Filtering--Based-Recommendation-System
-
+model_knn = model_data["model_knn"]
+book_features_df = model_data["book_features_df"]
 
 @app.route("/")
 def index():
@@ -23,27 +21,39 @@ def index():
 def get_similar():
     data = request.get_json()
     book_name = data.get("book_name")
+
+    if not book_name:
+        return jsonify({"error": "No book name given"}), 400
+
     recommendations = recommend(book_name)
     return jsonify({"recommendations": recommendations})
 
 def recommend(book_title):
- 
-    if book_title not in pt.index:
-        raise Exception("Book not found")
 
-   
-    index = np.where(pt.index == book_title)[0][0]
+  
+    if book_title not in book_features_df.index:
+        return []
 
-   
-    similar_items = sorted(list(enumerate(similarity_scores[index])), 
-                           reverse=True, key=lambda x: x[1])[1:6]
+    query_index = book_features_df.index.get_loc(book_title)
+
+    distances, indices = model_knn.kneighbors(
+        book_features_df.iloc[query_index, :].values.reshape(1, -1),
+        n_neighbors=6
+    )
 
     results = []
-    for i in similar_items:
-        book = pt.index[i[0]]
-        author = books[books['Book-Title'] == book]['Book-Author'].values[0]
+    for i in range(1, 6):      
+        idx = indices.flatten()[i]
+        title = book_features_df.index[idx]
+
+        author_row = original_books_df.loc[
+            original_books_df["Book-Title"] == title, "Book-Author"
+        ]
+
+        author = author_row.values[0] if len(author_row) else "Unknown Author"
+
         results.append({
-            "Book-Title": book,
+            "Book-Title": title,
             "Book-Author": author
         })
 
