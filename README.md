@@ -1,219 +1,248 @@
-# 📚 Book Recommendation System
+# 📚 Book Recommendation System (KNN + Flask)
 
-A simple Flask-based web application that recommends similar books based on author, publisher, and title-word similarity. Users can enter a book name and instantly get the top 5 recommended books.
-
----
-
-## 🚀 Features
-
-* 🔍 **Search for any book**
-* 🤝 **Similarity-based recommendations** (author, publisher, and title-word match)
-* ⚡ Fast — no ML model required
-* 🎨 Clean minimal UI (HTML + CSS + JS)
-* 🌐 Built with Flask (Python)
-* 🗂️ Uses a preprocessed `books.pkl` dataset
+This project is a **Book Recommendation System** that uses **Collaborative Filtering** with **K-Nearest Neighbors (KNN)** to recommend similar books to users based on rating patterns.
+The machine learning model is trained in a Jupyter Notebook, saved as a **PKL file**, and integrated into a **Flask web application** for real-time recommendations.
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Project Features
 
-* **Backend:** Flask (Python)
-* **Frontend:** HTML, CSS, JavaScript
-* **Data:** Pandas (Pickle dataset)
-* **Server Communication:** Fetch API (JSON)
+### **🔹 Machine Learning**
+
+* Uses **User–Book rating matrix** generated from:
+
+  * `Books.csv`
+  * `Ratings.csv`
+* Converts matrix into sparse format.
+* Trains a **KNN model (cosine similarity)** for finding nearest books.
+* Saves the model & data as `recommender.pkl`.
+
+### **🔹 Backend (Flask)**
+
+* Loads the PKL model.
+* Accepts user input (book name) via API.
+* Returns top 5 similar books with similarity distance.
+
+### **🔹 Frontend**
+
+* HTML + CSS + JavaScript.
+* Search bar for book name.
+* Dynamically displays recommendations.
 
 ---
 
-## 📁 Project Structure
+## 📂 Project Structure
 
 ```
 project/
+│── data/
+│    ├── Books.csv
+│    ├── Ratings.csv
+│    ├── recommender.pkl
 │
-├── app.py
-├── recommender.py
-├── data/
-│   └── books.pkl
-├── templates/
-│   └── index.html
-├── static/
-│   ├── css/
-│   │   └── styles.css
-│   └── script.js
-└── README.md
+│── main.py
+│── templates/
+│    ├── index.html
+│
+│── static/
+│    ├── css/styles.css
+│    ├── js/script.js
+│
+│── notebook/
+│    ├── model_build.ipynb
+│
+│── README.md
 ```
 
 ---
 
-## 💡 How Recommendations Work
+## 🧠 ML Pipeline Explained
 
-When the user types a book name:
+### **1️⃣ Load and Clean Data**
 
-1. We search for the closest matching book title in the dataset.
-2. Take that book as the *target book*.
-3. For every other book, we calculate a **similarity score**:
+```python
+df_book['Year-Of-Publication'] = pd.to_numeric(df_book['Year-Of-Publication'], errors='coerce')
+df_book = df_book.dropna(subset=['Year-Of-Publication'])
+df_book = df_book[df_book['Year-Of-Publication'] > 1900]
+```
 
-   * +3 points → Same **author**
-   * +1 point → Same **publisher**
-   * +1 point for each common **word in the title**
-4. Filter out books with zero score.
-5. Sort by score in descending order:
-
-   ```python
-   recommendations = sorted(recommendations, key=lambda x: x["score"], reverse=True)
-   ```
-6. Return **top 5 recommendations**.
-
-This ensures the user always sees the most relevant books first.
+✔ Ensures valid years
+✔ Removes corrupted rows
+✔ Keeps only meaningful book data
 
 ---
 
-## 🧪 Example Response
+### **2️⃣ Merge Books and Ratings**
 
-### User input:
-
-```
-"Harry Potter"
+```python
+merged_df = pd.merge(df_book, ratings, on='ISBN')
 ```
 
-### Output JSON:
-
-```json
-{
-  "recommendations": [
-    {
-      "title": "Harry Potter and the Chamber of Secrets",
-      "author": "J.K. Rowling",
-      "publisher": "Scholastic",
-      "score": 7
-    },
-    ...
-  ]
-}
-```
+Creates a single dataframe with all relevant information.
 
 ---
 
-## 🛠️ Installation & Setup
+### **3️⃣ Filter Popular Books (minimum 50 ratings)**
 
-### 1️⃣ Clone the repository
-
-```
-git clone https://github.com/your-username/book-recommendation-system.git
-cd book-recommendation-system
+```python
+popularity_threshold = 50
+rating_popular_book = rating_with_totalRatingCount.query('totalRatingCount >= @popularity_threshold')
 ```
 
-### 2️⃣ Install dependencies
+✔ Reduces noise
+✔ Ensures better recommendations
 
+---
+
+### **4️⃣ Create User–Book Matrix**
+
+```python
+book_features_df = rating_popular_book.pivot_table(
+    index='Book-Title',
+    columns='User-ID',
+    values='Book-Rating'
+).fillna(0)
 ```
-pip install flask pandas
+
+Matrix shape example:
+
+| Book   | User1 | User2 | User3 |
+| ------ | ----- | ----- | ----- |
+| Book A | 5     | 0     | 7     |
+| Book B | 0     | 8     | 6     |
+
+---
+
+### **5️⃣ Convert to Sparse Matrix**
+
+```python
+book_features_df_matrix = csr_matrix(book_features_df.values)
 ```
 
-### 3️⃣ Add the dataset
+Speeds up KNN calculations.
 
-Place your `books.pkl` file inside the **data/** directory.
+---
 
-### 4️⃣ Run the Flask app
+### **6️⃣ Train KNN**
 
-```
-python app.py
-```
-
-### 5️⃣ Open in browser
-
-```
-http://127.0.0.1:5000/
+```python
+model_knn = NearestNeighbors(metric='cosine', algorithm='brute')
+model_knn.fit(book_features_df_matrix)
 ```
 
 ---
 
-## 🖥️ API Endpoint
+### **7️⃣ Save Model**
+
+```python
+pickle.dump(model_data, open("data/recommender.pkl", "wb"))
+```
+
+---
+
+### **8️⃣ Use in Flask**
+
+Flask loads the PKL file:
+
+```python
+model_data = pickle.load(open("data/recommender.pkl", "rb"))
+model_knn = model_data["model_knn"]
+book_features_df = model_data["book_features_df"]
+```
+
+Recommendation function:
+
+```python
+distances, indices = model_knn.kneighbors(
+    book_features_df.iloc[query_index,:].values.reshape(1, -1),
+    n_neighbors=6
+)
+```
+
+---
+
+## 🧪 Model Evaluation
+
+You computed:
+
+```
+precision@k = 0.00107
+recall@k    = 0.000099
+f1@k        = 0.000181
+```
+
+Why low?
+
+* Collaborative filtering with **implicit ratings** is noisy
+* No user personalization
+* Book ratings dataset is sparse
+
+You can improve with:
+
+* Matrix factorization (SVD)
+* Hybrid filtering (content + CF)
+* Removing cold start users
+* Normalizing ratings
+
+---
+
+## 📊 Visual Evaluation Graph
+
+A simple evaluation graph is included (precision/recall/F1).
+
+---
+
+## ▶️ How to Run This Project
+
+### **1. Install dependencies**
+
+```
+pip install flask pandas numpy scikit-learn scipy
+```
+
+### **2. Train model**
+
+Run `model_build.ipynb` to create `recommender.pkl`.
+
+### **3. Start Flask**
+
+```
+python main.py
+```
+
+Visit:
+👉 `http://127.0.0.1:5000/`
+
+---
+
+## 📝 API Endpoint
 
 ### **POST /get_similar**
 
-**Request Body**
+**Request:**
 
 ```json
 {
-  "book_name": "Harry Potter"
+  "book_name": "Harry Potter and the Philosopher's Stone"
 }
 ```
 
-**Response**
+**Response:**
 
 ```json
 {
   "recommendations": [
-    {
-      "title": "Harry Potter and the Goblet of Fire",
-      "author": "J.K. Rowling",
-      "publisher": "Scholastic",
-      "score": 6
-    }
+    { "title": "Another Book", "distance": 0.12 },
+    { "title": "Some Book", "distance": 0.15 }
   ]
 }
 ```
 
 ---
 
-## 🧩 Frontend Explanation
+## ⭐ Future Improvements
 
-### `index.html`
-
-* Contains input box and button.
-* Displays results.
-
-### `script.js`
-
-Sends user input to Flask:
-
-```javascript
-fetch("/get_similar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ book_name })
-})
-```
-
-Shows "Searching..." while waiting:
-
-```javascript
-results.innerHTML = "<li>Searching...</li>";
-```
-
-### `styles.css`
-
-* Minimal styling
-* Centered layout
-
----
-
-## 🧠 Why This Works (Simple ML Concept)
-
-Although not using a machine-learning model, the system behaves like a **rule-based recommender**:
-
-* It uses *content-based filtering*
-* Compares attributes of one book with others
-* Scores similarity
-* Ranks and returns the top results
-
-This is a beginner-friendly way to implement a recommender system without training a model.
-
----
-
-## 📌 Future Improvements
-
-You can upgrade this app later by adding:
-
-* TF-IDF text vectorization
-* Cosine similarity
-* A trained recommendation model
-* User ratings + collaborative filtering
-* Pagination and UI improvements
-
----
-
-## 📄 License
-
-This project is open-source under the MIT License.
-
-
+* Add covers & descriptions using Google Books API
+* Add user login & personalization
+* Implement Matrix Factorization (SVD, ALS)
+* Deploy on Render/DigitalOcean/AWS
